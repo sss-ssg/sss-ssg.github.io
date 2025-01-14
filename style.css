@@ -4743,6 +4743,7 @@ pre {
     background: no-repeat center center;
     background-size: cover;
     position: relative;
+    background-color: rgb(0, 0, 0);
 }
 .image-wrapper:not(.box-shadow):not(*:root) {
     -webkit-transform: translateZ(0)	
@@ -4759,7 +4760,7 @@ pre {
     z-index: 1;
     width: 100%;
     height: 100%;
-    background: rgba(21, 21, 21, 0.5);
+    background: rgba(0, 0, 0, 0.54);
 }
 .image-wrapper.no-overlay:before {
     display: none;
