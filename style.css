@@ -107,7 +107,7 @@ body {
     color: #606060;
     font-family: 'Muli', sans-serif;
     font-size: 16px;
-    background: #FFF;
+    background: #000000!important;
     overflow-x: hidden;
 }
 .font-body {
