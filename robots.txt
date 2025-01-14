@@ -1,0 +1,14 @@
+User-agent: *
+
+Disallow: 
+
+Allow: /
+Allow: /style/images/tse/
+Allow: /style/images/art/
+
+Allow: https://sss-ssg.ch/style/images/sol-5-lucas-gatsas-lunt40mm.jpg
+
+
+
+Sitemap: https://sss-ssg.ch/images-sitemap.xml
+Sitemap: https://sss-ssg.ch/sitemap.xml
