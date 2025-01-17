@@ -1,8 +1,8 @@
 /*-------------------------------------------------------------------------------------
-Theme Name:	Brailie
-Theme URI: 	https://demos.elemisthemes.com/brailie
+Theme Name:	SSS SSG
+Theme URI: 	https://spacedig.co
 Version:	1.0.8
-Author:		elemis
+Author:		spacedig.co
 01. RESET
 02. GENERAL
 03. NAVBAR
@@ -158,7 +158,7 @@ a.hover:hover {
     transition: border 150ms ease-in-out;
 }
 a {
-    color: #4c86e5;
+    color: #383838;
     -webkit-transition: all 150ms ease-in-out;
     -o-transition: all 150ms ease-in-out;
     transition: all 150ms ease-in-out;

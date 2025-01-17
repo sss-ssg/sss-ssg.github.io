@@ -11,12 +11,12 @@ a.hover:hover {
     border-bottom: 1px solid #000;
 }
 a {
-    color: #000;
+    color: #6a6a6a;
 }
 a:hover,
 a:focus {
     text-decoration: none;
-    color: #000;
+    color: #4c4c4c;
 }
 .color-wrapper {
     background: #000;
