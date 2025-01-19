@@ -5689,7 +5689,7 @@ list-blue i {
         background: black;
     }
     div#slider_forcefullwidth {
-        padding-top: 120px;
+        padding-top: 1px;
     }
 }
 @media (min-width: 992px) {
