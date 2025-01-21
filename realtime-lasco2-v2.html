@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LASCO C2 Live Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin: 20px 0;
+        }
+        #image-container {
+            margin: 20px auto;
+            max-width: 80%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        footer {
+            margin-top: 20px;
+            font-size: 0.8em;
+        }
+    </style>
+    <script>
+        async function fetchLatestImage() {
+            const url = "https://services.swpc.noaa.gov/products/animations/lasco-c2.json";
+            const baseUrl = "https://services.swpc.noaa.gov";
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Extract the latest image URL
+                const relativePath = data[data.length - 1]?.url;
+                const latestImage = baseUrl + relativePath;
+
+                if (latestImage) {
+                    document.getElementById("lasco-image").src = latestImage;
+                    document.getElementById("timestamp").textContent = `Latest Image: ${relativePath}`;
+                } else {
+                    document.getElementById("timestamp").textContent = "No images available.";
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById("timestamp").textContent = "Error fetching data. Please try again later.";
+            }
+        }
+
+        // Refresh the image every 60 seconds
+        setInterval(fetchLatestImage, 60000);
+        window.onload = fetchLatestImage;
+    </script>
+</head>
+<body>
+    <h1>LASCO C2 Live Viewer</h1>
+    <div id="image-container">
+        <img id="lasco-image" src="" alt="LASCO C2 Latest Image">
+    </div>
+    <p id="timestamp">Loading...</p>
+    <footer>
+        Data provided by <a href="https://www.swpc.noaa.gov/products/lasco-coronagraph" target="_blank" style="color: #0af;">NOAA SWPC</a>
+    </footer>
+</body>
+</html>
