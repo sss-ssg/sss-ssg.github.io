@@ -1,80 +1,135 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helioviewer API - Bilder und Video</title>
+    <title>Solar Observation: Last 48 Hours</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg.js/4.4.0/ffmpeg.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: space-between;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
+            text-align: center;
+            background-color: #f4f4f9;
+            color: #333;
         }
-
         .container {
-            width: 45%;
-            margin: 2%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            overflow: hidden;
+            margin: 20px auto;
+            max-width: 800px;
         }
-
-        .container img, .container video {
+        video, canvas {
             width: 100%;
-            height: auto;
+            max-width: 800px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        p {
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-
-    <div class="container" id="image-container">
-        <h2>Bilder der letzten 72 Stunden</h2>
-        <div id="image-content">
-            <!-- Bilder werden hier geladen -->
-        </div>
-    </div>
-
-    <div class="container" id="video-container">
-        <h2>Video der letzten 72 Stunden</h2>
-        <div id="video-content">
-            <!-- Video wird hier geladen -->
-        </div>
+    <div class="container">
+        <h1>Solar Observation: Last 48 Hours</h1>
+        <p>Below you can view the compiled video of solar activity from the last 48 hours or generate a new one.</p>
+        <video id="solarVideo" controls>
+            <source src="solar_video.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <button id="generateVideo">Generate New Video</button>
+        <canvas id="previewCanvas" style="display:none;"></canvas>
+        <p><em>Video generated from hourly solar images provided by NASA's Solar Dynamics Observatory.</em></p>
     </div>
 
     <script>
-        // Die Funktion, die Bilder der letzten 72 Stunden abruft
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+
+        const generateButton = document.getElementById('generateVideo');
+        const videoElement = document.getElementById('solarVideo');
+
         async function fetchImages() {
-            const response = await fetch('https://cors-anywhere.herokuapp.com/https://api.helioviewer.org/v2/getThumbnail/?date=2025-01-21T00:00:00Z&duration=259200&width=400&height=400&sourceId=304');
+            const baseUrl = 'https://sdo.gsfc.nasa.gov/assets/img/latest/'; // Korrekte Basis-URL für die Bilder
+            const imageUrls = [];
+            const now = new Date();
 
-            const data = await response.json();
+            // Schleife für die letzten 48 Stunden
+            for (let i = 0; i < 48; i++) {
+                const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+                const formattedTime = time.toISOString().slice(0, 10).replace(/-/g, '') + '_' + time.getHours().toString().padStart(2, '0') + '00';
+                
+                const imageUrl = `${baseUrl}${formattedTime}_0304.jpg`;
+                console.log(`Image URL: ${imageUrl}`); // Zum Debuggen der Bild-URL
+                imageUrls.push(imageUrl);
+            }
 
-            let imageContainer = document.getElementById('image-content');
-            data.forEach(imgData => {
-                let img = document.createElement('img');
-                img.src = imgData.url;
-                imageContainer.appendChild(img);
+            return imageUrls;
+        }
+
+        async function downloadImages(imageUrls) {
+            const images = [];
+            for (const url of imageUrls) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Image not found: ${url}`);
+                    const blob = await response.blob();
+                    images.push(await fetchFile(blob));
+                } catch (error) {
+                    console.warn(`Skipping image: ${error.message}`);
+                }
+            }
+            return images;
+        }
+
+        async function createVideo() {
+            const imageUrls = await fetchImages();
+            const images = await downloadImages(imageUrls);
+
+            if (images.length === 0) {
+                alert('No images available to generate the video.');
+                return;
+            }
+
+            if (!ffmpeg.isLoaded()) {
+                await ffmpeg.load();
+            }
+
+            images.forEach((image, index) => {
+                ffmpeg.FS('writeFile', `image${index}.jpg`, image);
             });
+
+            await ffmpeg.run(
+                '-framerate', '10',
+                '-i', 'image%d.jpg',
+                '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p',
+                'output.mp4'
+            );
+
+            const data = ffmpeg.FS('readFile', 'output.mp4');
+            const videoBlob = new Blob([data.buffer], { type: 'video/mp4' });
+            const videoUrl = URL.createObjectURL(videoBlob);
+
+            videoElement.src = videoUrl;
+            alert('Video created successfully!');
         }
 
-        // Die Funktion, die das Video der letzten 72 Stunden abruft
-        async function fetchVideo() {
-            const response = await fetch('https://cors-anywhere.herokuapp.com/https://api.helioviewer.org/v2/getVideo/?date=2025-01-21T00:00:00Z&duration=259200&sourceId=304');
-            const data = await response.json();
-
-            let videoContainer = document.getElementById('video-content');
-            let video = document.createElement('video');
-            video.controls = true;
-            video.src = data.url;
-            videoContainer.appendChild(video);
-        }
-
-        // Beide Funktionen aufrufen
-        fetchImages();
-        fetchVideo();
+        generateButton.addEventListener('click', createVideo);
     </script>
 </body>
 </html>
