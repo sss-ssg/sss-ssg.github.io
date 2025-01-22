@@ -16,7 +16,7 @@
             margin: 20px auto;
             max-width: 800px;
         }
-        video, canvas {
+        video {
             width: 100%;
             max-width: 800px;
             border: 2px solid #ccc;
@@ -26,9 +26,6 @@
         }
         h1 {
             margin-bottom: 10px;
-        }
-        p {
-            margin-bottom: 20px;
         }
         button {
             background-color: #007BFF;
@@ -46,94 +43,93 @@
 <body>
     <div class="container">
         <h1>Solar Observation: Last 48 Hours</h1>
-        <p>Below you can view the compiled video of solar activity from the last 48 hours or generate a new one.</p>
+        <p>Click the button below to generate a video of solar activity from the last 48 hours.</p>
         <video id="solarVideo" controls>
-            <source src="solar_video.mp4" type="video/mp4">
+            <source id="videoSource" src="" type="video/mp4">
             Your browser does not support the video tag.
         </video>
-        <button id="generateVideo">Generate New Video</button>
-        <canvas id="previewCanvas" style="display:none;"></canvas>
-        <p><em>Video generated from hourly solar images provided by NASA's Solar Dynamics Observatory.</em></p>
+        <button id="generateVideo">Generate Video</button>
+        <p><em>Images are sourced from NASA's Solar Dynamics Observatory.</em></p>
     </div>
 
     <script>
         const { createFFmpeg, fetchFile } = FFmpeg;
         const ffmpeg = createFFmpeg({ log: true });
-
-        const generateButton = document.getElementById('generateVideo');
-        const videoElement = document.getElementById('solarVideo');
-
         const apiKey = 'JDtKdYWFIzNkT3ZCQYyTWjimERxVCc0kmgnjLhSH';
         const baseUrl = 'https://api.nasa.gov/SDO/image';
+        const videoElement = document.getElementById('solarVideo');
+        const videoSource = document.getElementById('videoSource');
+        const generateButton = document.getElementById('generateVideo');
 
-        async function fetchImages() {
-            const imageUrls = [];
+        async function fetchImageUrls() {
             const now = new Date();
-
+            const urls = [];
             for (let i = 0; i < 48; i++) {
                 const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-                const year = time.getUTCFullYear();
-                const month = String(time.getUTCMonth() + 1).padStart(2, '0');
-                const day = String(time.getUTCDate()).padStart(2, '0');
-                const hour = String(time.getUTCHours()).padStart(2, '0');
-
-                const formattedTime = `${year}-${month}-${day}T${hour}:00:00Z`;
-                const url = `${baseUrl}?date=${formattedTime}&api_key=${apiKey}`;
-                imageUrls.push(url);
+                const dateString = time.toISOString();
+                urls.push(`${baseUrl}?date=${dateString}&api_key=${apiKey}`);
             }
-
-            return imageUrls;
+            return urls;
         }
 
-        async function downloadImages(imageUrls) {
+        async function downloadImages(urls) {
             const images = [];
-            for (const url of imageUrls) {
+            for (const url of urls) {
                 try {
                     const response = await fetch(url);
-                    if (!response.ok) throw new Error(`Image not found: ${url}`);
+                    if (!response.ok) {
+                        console.error(`Failed to fetch image: ${url}`);
+                        continue;
+                    }
                     const blob = await response.blob();
                     images.push(await fetchFile(blob));
                 } catch (error) {
-                    console.warn(`Skipping image: ${error.message}`);
+                    console.error(`Error downloading image: ${error.message}`);
                 }
             }
             return images;
         }
 
-        async function createVideo() {
-            const imageUrls = await fetchImages();
-            const images = await downloadImages(imageUrls);
+        async function generateVideo() {
+            try {
+                const urls = await fetchImageUrls();
+                const images = await downloadImages(urls);
 
-            if (images.length === 0) {
-                alert('No images available to generate the video.');
-                return;
+                if (images.length === 0) {
+                    alert('No images available for video generation.');
+                    return;
+                }
+
+                if (!ffmpeg.isLoaded()) {
+                    await ffmpeg.load();
+                }
+
+                images.forEach((image, index) => {
+                    ffmpeg.FS('writeFile', `image${index}.jpg`, image);
+                });
+
+                await ffmpeg.run(
+                    '-framerate', '10',
+                    '-i', 'image%d.jpg',
+                    '-c:v', 'libx264',
+                    '-pix_fmt', 'yuv420p',
+                    'output.mp4'
+                );
+
+                const data = ffmpeg.FS('readFile', 'output.mp4');
+                const videoBlob = new Blob([data.buffer], { type: 'video/mp4' });
+                const videoUrl = URL.createObjectURL(videoBlob);
+
+                videoSource.src = videoUrl;
+                videoElement.load();
+                alert('Video generated successfully!');
+            } catch (error) {
+                console.error('Error generating video:', error);
+                alert('An error occurred while generating the video. Check the console for details.');
             }
-
-            if (!ffmpeg.isLoaded()) {
-                await ffmpeg.load();
-            }
-
-            images.forEach((image, index) => {
-                ffmpeg.FS('writeFile', `image${index}.jpg`, image);
-            });
-
-            await ffmpeg.run(
-                '-framerate', '10',
-                '-i', 'image%d.jpg',
-                '-c:v', 'libx264',
-                '-pix_fmt', 'yuv420p',
-                'output.mp4'
-            );
-
-            const data = ffmpeg.FS('readFile', 'output.mp4');
-            const videoBlob = new Blob([data.buffer], { type: 'video/mp4' });
-            const videoUrl = URL.createObjectURL(videoBlob);
-
-            videoElement.src = videoUrl;
-            alert('Video created successfully!');
         }
 
-        generateButton.addEventListener('click', createVideo);
+        generateButton.addEventListener('click', generateVideo);
     </script>
 </body>
 </html>
