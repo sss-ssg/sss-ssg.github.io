@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solar Observation: Last 48 Hours</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg.js/4.4.0/ffmpeg.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -63,19 +63,23 @@
         const generateButton = document.getElementById('generateVideo');
         const videoElement = document.getElementById('solarVideo');
 
+        const apiKey = 'JDtKdYWFIzNkT3ZCQYyTWjimERxVCc0kmgnjLhSH';
+        const baseUrl = 'https://api.nasa.gov/SDO/image';
+
         async function fetchImages() {
-            const baseUrl = 'https://sdo.gsfc.nasa.gov/assets/img/latest/'; // Korrekte Basis-URL für die Bilder
             const imageUrls = [];
             const now = new Date();
 
-            // Schleife für die letzten 48 Stunden
             for (let i = 0; i < 48; i++) {
                 const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-                const formattedTime = time.toISOString().slice(0, 10).replace(/-/g, '') + '_' + time.getHours().toString().padStart(2, '0') + '00';
-                
-                const imageUrl = `${baseUrl}${formattedTime}_0304.jpg`;
-                console.log(`Image URL: ${imageUrl}`); // Zum Debuggen der Bild-URL
-                imageUrls.push(imageUrl);
+                const year = time.getUTCFullYear();
+                const month = String(time.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(time.getUTCDate()).padStart(2, '0');
+                const hour = String(time.getUTCHours()).padStart(2, '0');
+
+                const formattedTime = `${year}-${month}-${day}T${hour}:00:00Z`;
+                const url = `${baseUrl}?date=${formattedTime}&api_key=${apiKey}`;
+                imageUrls.push(url);
             }
 
             return imageUrls;
