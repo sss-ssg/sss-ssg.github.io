@@ -55,20 +55,25 @@
     <script>
         const { createFFmpeg, fetchFile } = FFmpeg;
         const ffmpeg = createFFmpeg({ log: true });
-        const apiKey = 'JDtKdYWFIzNkT3ZCQYyTWjimERxVCc0kmgnjLhSH';
-        const baseUrl = 'https://api.nasa.gov/SDO/image';
         const videoElement = document.getElementById('solarVideo');
         const videoSource = document.getElementById('videoSource');
         const generateButton = document.getElementById('generateVideo');
 
         async function fetchImageUrls() {
+            const baseUrl = 'https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_';
             const now = new Date();
             const urls = [];
+
             for (let i = 0; i < 48; i++) {
                 const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-                const dateString = time.toISOString();
-                urls.push(`${baseUrl}?date=${dateString}&api_key=${apiKey}`);
+                const year = time.getUTCFullYear();
+                const month = String(time.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(time.getUTCDate()).padStart(2, '0');
+                const hour = String(time.getUTCHours()).padStart(2, '0');
+                const timestamp = `${year}${month}${day}_${hour}`;
+                urls.push(`${baseUrl}${timestamp}_0304.jpg`);
             }
+
             return urls;
         }
 
@@ -133,6 +138,3 @@
     </script>
 </body>
 </html>
-
-
-
